@@ -1,55 +1,9 @@
-<!-- Добавим кнопку для входа и элемент для отображения имени пользователя -->
-<button id="login-btn">Войти через GitHub</button>
-<h2 id="user-info"></h2>
-
-<script type="module">
-    // Импортируем функции Firebase App и Analytics
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
-    
-    // Импортируем необходимые инструменты авторизации
-    import { getAuth, signInWithPopup, GithubAuthProvider } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-  
-    // Твоя конфигурация Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyDskCVQfkwKRmODPh3rwMxOSth5loHv_7M",
-      authDomain: "isakk-c0092.firebaseapp.com",
-      projectId: "isakk-c0092",
-      storageBucket: "isakk-c0092.firebasestorage.app",
-      messagingSenderId: "538175160568",
-      appId: "1:538175160568:web:e5e5696863f2cc069afb0d",
-      measurementId: "G-ETFG9RPS31"
-    };
-  
-    // Инициализируем Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-
-    // Инициализируем Firebase Auth и провайдер GitHub
-    const auth = getAuth(app);
-    const provider = new GithubAuthProvider();
-
-    // Находим элементы на странице
-    const loginBtn = document.getElementById("login-btn");
-    const userInfo = document.getElementById("user-info");
-
-    // Добавляем обработчик нажатия на кнопку
-    loginBtn.addEventListener("click", () => {
-      signInWithPopup(auth, provider)
-        .then((result) => {
-          // Успешный вход! Получаем данные пользователя
-          const user = result.user;
-          userInfo.textContent = `Привет, ${user.displayName || user.email}!`;
-          console.log("Данные пользователя:", user);
-        })
-        .catch((error) => {
-          // Обрабатываем возможные ошибки
-          console.error("Ошибка авторизации:", error);
-          userInfo.textContent = "Ошибка при входе: " + error.message;
-        });
-    });
-</script>
-<style>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title> MACAN & GitHub </title>
+  <style>
     /* Розовый градиент на фоне */
     body {
       background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fe9a8b 100%);
@@ -85,13 +39,12 @@
       color: white;
       text-shadow: 2px 4px 10px rgba(0, 0, 0, 0.2);
       font-size: 2.5rem;
-      margin-bottom: 20px;
+      margin: 0 0 20px 0;
       z-index: 10;
     }
   
-    /* Яркая кнопка входа через GitHub */
+    /* Яркие кнопки */
     button {
-      background: #ff4081;
       color: white;
       border: none;
       padding: 15px 35px;
@@ -99,14 +52,28 @@
       font-weight: bold;
       border-radius: 50px;
       cursor: pointer;
-      box-shadow: 0 10px 25px rgba(255, 64, 129, 0.4);
       transition: all 0.3s ease;
       z-index: 10;
     }
+
+    #login-btn {
+      background: #ff4081;
+      box-shadow: 0 10px 25px rgba(255, 64, 129, 0.4);
+    }
   
-    button:hover {
+    #login-btn:hover {
       transform: translateY(-5px);
       box-shadow: 0 15px 30px rgba(255, 64, 129, 0.6);
+    }
+
+    #logout-btn {
+      background: #4a4a4a;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    #logout-btn:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
     }
   
     #user-info {
@@ -114,7 +81,7 @@
       font-size: 1.4rem;
       font-weight: bold;
       margin-top: 20px;
-      text-shadow: 1px 2px 5px rgba(0,0,0,0.1);
+      text-shadow: 1px 2px 5px rgba(0,0,0,0.15);
       z-index: 10;
     }
   
@@ -149,12 +116,67 @@
       }
     }
   </style>
-  
-  <!-- Твоё фото Макана вставлено прямо сюда -->
+</head>
+<body>
+
   <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRST8KXhD3P-s6M7lGlNwocjk3K_pgyKsdWZmas7BpxmQ&s=10" alt="MACAN" class="macan-photo">
-  <h1>🔥 MACAN & GitHub 🔥</h1>
-  <button id="login-btn">👾 Войти через GitHub</button>
+  <h1> MACAN & GitHub </h1>
+  
+  <button id="login-btn"> Войти через GitHub нафиг</button>
+  <button id="logout-btn" style="display: none;">🚪 Выйти нафиг</button>
+  
   <p id="user-info"></p>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GithubAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+  
+    const firebaseConfig = {
+      apiKey: "AIzaSyDskCVQfkwKRmODPh3rwMxOSth5loHv_7M",
+      authDomain: "isakk-c0092.firebaseapp.com",
+      projectId: "isakk-c0092",
+      storageBucket: "isakk-c0092.firebasestorage.app",
+      messagingSenderId: "538175160568",
+      appId: "1:538175160568:web:e5e5696863f2cc069afb0d",
+      measurementId: "G-ETFG9RPS31"
+    };
+  
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GithubAuthProvider();
+
+    const loginBtn = document.getElementById("login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const userInfo = document.getElementById("user-info");
+
+    // Отслеживаем статус входа в реальном времени
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        userInfo.textContent = `Привет, ${user.displayName || user.email}!`;
+      } else {
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        userInfo.textContent = "";
+      }
+    });
+
+    // Вход
+    loginBtn.addEventListener("click", () => {
+      signInWithPopup(auth, provider).catch((error) => {
+        console.error("Ошибка авторизации:", error);
+        userInfo.textContent = "Ошибка при входе: " + error.message;
+      });
+    });
+
+    // Выход
+    logoutBtn.addEventListener("click", () => {
+      signOut(auth).catch((error) => {
+        console.error("Ошибка при выходе:", error);
+      });
+    });
+  </script>
   
   <script>
     // Генератор летающих какашек 💩
@@ -163,20 +185,18 @@
       poop.classList.add('poop-emoji');
       poop.innerText = '💩';
       
-      // Случайная позиция по горизонтали, скорость движения и размер
       poop.style.left = Math.random() * 100 + 'vw';
-      poop.style.animationDuration = (Math.random() * 3 + 4) + 's'; // от 4 до 7 секунд
+      poop.style.animationDuration = (Math.random() * 3 + 4) + 's';
       poop.style.fontSize = (Math.random() * 1.5 + 1.5) + 'rem';
       
       document.body.appendChild(poop);
   
-      // Удаляем смайлик после завершения анимации
       setTimeout(() => {
         poop.remove();
       }, 7000);
     }
   
-    // Запуск летающих какашек каждые полсекунды
     setInterval(spawnPoop, 500);
   </script>
-  
+</body>
+</html>
