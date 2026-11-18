@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title> MACAN & GitHub </title>
   <style>
-    /* Розовый градиент на фоне */
     body {
       background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fe9a8b 100%);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -18,7 +17,6 @@
       position: relative;
     }
   
-    /* Круглое фото Макана с рамкой и тенью */
     .macan-photo {
       width: 220px;
       height: 220px;
@@ -31,9 +29,7 @@
       transition: transform 0.3s ease, rotate 0.3s ease;
     }
   
-    .macan-photo:hover {
-      transform: scale(1.08) rotate(5deg);
-    }
+    .macan-photo:hover { transform: scale(1.08) rotate(5deg); }
   
     h1 {
       color: white;
@@ -43,7 +39,6 @@
       z-index: 10;
     }
   
-    /* Яркие кнопки */
     button {
       color: white;
       border: none;
@@ -84,8 +79,28 @@
       text-shadow: 1px 2px 5px rgba(0,0,0,0.15);
       z-index: 10;
     }
+
+    #db-section {
+      z-index: 10;
+      margin-top: 15px;
+      text-align: center;
+    }
+
+    #db-input {
+      padding: 10px 15px;
+      border-radius: 25px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      margin-right: 10px;
+    }
+
+    #db-write-btn {
+      background: #28a745;
+      padding: 10px 25px;
+      font-size: 1rem;
+    }
   
-    /* Стили для летающих на фоне какашек 💩 */
     .poop-emoji {
       position: absolute;
       bottom: -60px;
@@ -98,22 +113,10 @@
     }
   
     @keyframes flyUp {
-      0% {
-        bottom: -60px;
-        opacity: 0;
-        transform: translateX(0) rotate(0deg);
-      }
-      10% {
-        opacity: 0.9;
-      }
-      90% {
-        opacity: 0.9;
-      }
-      100% {
-        bottom: 110vh;
-        opacity: 0;
-        transform: translateX(120px) rotate(360deg);
-      }
+      0% { bottom: -60px; opacity: 0; transform: translateX(0) rotate(0deg); }
+      10% { opacity: 0.9; }
+      90% { opacity: 0.9; }
+      100% { bottom: 110vh; opacity: 0; transform: translateX(120px) rotate(360deg); }
     }
   </style>
 </head>
@@ -127,14 +130,22 @@
   
   <p id="user-info"></p>
 
+  <div id="db-section" style="display: none;">
+    <input type="text" id="db-input" placeholder="Напиши что-нибудь...">
+    <button id="db-write-btn">Сохранить в БД</button>
+    <p id="db-display" style="color: white; font-weight: bold; margin-top: 15px; text-shadow: 1px 1px 5px rgba(0,0,0,0.3);"></p>
+  </div>
+
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-    import { getAuth, signInWithPopup, GithubAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GithubAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
   
     const firebaseConfig = {
       apiKey: "AIzaSyDskCVQfkwKRmODPh3rwMxOSth5loHv_7M",
       authDomain: "isakk-c0092.firebaseapp.com",
       projectId: "isakk-c0092",
+      databaseURL: "https://isakk-c0092-default-rtdb.firebaseio.com",
       storageBucket: "isakk-c0092.firebasestorage.app",
       messagingSenderId: "538175160568",
       appId: "1:538175160568:web:e5e5696863f2cc069afb0d",
@@ -143,60 +154,80 @@
   
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getDatabase(app);
     const provider = new GithubAuthProvider();
 
     const loginBtn = document.getElementById("login-btn");
     const logoutBtn = document.getElementById("logout-btn");
     const userInfo = document.getElementById("user-info");
+    const dbSection = document.getElementById("db-section");
+    const dbInput = document.getElementById("db-input");
+    const dbWriteBtn = document.getElementById("db-write-btn");
+    const dbDisplay = document.getElementById("db-display");
 
-    // Отслеживаем статус входа в реальном времени
+    let unsubscribeDb = null;
+
     onAuthStateChanged(auth, (user) => {
       if (user) {
         loginBtn.style.display = "none";
         logoutBtn.style.display = "inline-block";
         userInfo.textContent = `Привет, ${user.displayName || user.email}!`;
+        dbSection.style.display = "block";
+
+        const userRef = ref(db, 'users/' + user.uid);
+        unsubscribeDb = onValue(userRef, (snapshot) => {
+          const data = snapshot.val();
+          dbDisplay.textContent = data ? `Из БД: ${data.message}` : "В БД пока пусто.";
+        });
       } else {
         loginBtn.style.display = "inline-block";
         logoutBtn.style.display = "none";
         userInfo.textContent = "";
+        dbSection.style.display = "none";
+        dbDisplay.textContent = "";
+        if (unsubscribeDb) {
+          unsubscribeDb();
+          unsubscribeDb = null;
+        }
       }
     });
 
-    // Вход
+    dbWriteBtn.addEventListener("click", () => {
+      const user = auth.currentUser;
+      if (user && dbInput.value.trim() !== "") {
+        set(ref(db, 'users/' + user.uid), {
+          message: dbInput.value,
+          updatedAt: Date.now()
+        }).then(() => {
+          dbInput.value = "";
+        }).catch(err => console.error("Ошибка записи:", err));
+      }
+    });
+
     loginBtn.addEventListener("click", () => {
-      signInWithPopup(auth, provider).catch((error) => {
-        console.error("Ошибка авторизации:", error);
+      signInWithPopup(auth, provider).catch(error => {
         userInfo.textContent = "Ошибка при входе: " + error.message;
       });
     });
 
-    // Выход
     logoutBtn.addEventListener("click", () => {
-      signOut(auth).catch((error) => {
-        console.error("Ошибка при выходе:", error);
-      });
+      signOut(auth).catch(err => console.error(err));
     });
   </script>
   
   <script>
-    // Генератор летающих какашек 💩
     function spawnPoop() {
       const poop = document.createElement('div');
       poop.classList.add('poop-emoji');
       poop.innerText = '💩';
-      
       poop.style.left = Math.random() * 100 + 'vw';
       poop.style.animationDuration = (Math.random() * 3 + 4) + 's';
       poop.style.fontSize = (Math.random() * 1.5 + 1.5) + 'rem';
-      
       document.body.appendChild(poop);
-  
-      setTimeout(() => {
-        poop.remove();
-      }, 7000);
+      setTimeout(() => poop.remove(), 7000);
     }
-  
     setInterval(spawnPoop, 500);
   </script>
 </body>
 </html>
+
