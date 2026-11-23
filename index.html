@@ -174,7 +174,7 @@
         userInfo.textContent = `Привет, ${user.displayName || user.email}!`;
         dbSection.style.display = "block";
 
-        const userRef = ref(db, 'users/' + user.uid);
+        const userRef = ref(db, 'something/' + user.uid);
         unsubscribeDb = onValue(userRef, (snapshot) => {
           const data = snapshot.val();
           dbDisplay.textContent = data ? `Из БД: ${data.message}` : "В БД пока пусто.";
@@ -195,7 +195,7 @@
     dbWriteBtn.addEventListener("click", () => {
       const user = auth.currentUser;
       if (user && dbInput.value.trim() !== "") {
-        set(ref(db, 'users/' + user.uid), {
+        set(ref(db, 'something/' + user.uid), {
           message: dbInput.value,
           updatedAt: Date.now()
         }).then(() => {
